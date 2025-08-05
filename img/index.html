@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title> 💸𝖬𝖠𝖭𝖠𝖩𝖤𝖬𝖤𝖭 𝖴𝖠𝖭𝖦 𝖡𝖸 𝖸𝖴𝖱𝖮💸</title>
+  <style>
+    /* =================== GLOBAL =================== */
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background-image: url("img/xd.jpg");
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      background-attachment: fixed;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      position: relative;
+      color: white;
+      overflow: hidden;
+    }
+
+    /* =================== OVERLAY =================== */
+    .bg-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.6);
+      z-index: -1;
+    }
+
+    /* =================== ANIMASI MASUK =================== */
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .container {
+      max-width: 800px;
+      width: 90%;
+      padding: 30px;
+      background-color: rgba(30, 30, 30, 0.85);
+      border-radius: 15px;
+      box-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
+      animation: fadeIn 1s ease-out forwards;
+    }
+
+    /* =================== FORM =================== */
+    h1 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    form {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    form input, form button {
+      padding: 10px;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+    }
+
+    form input {
+      flex: 1;
+    }
+
+    /* =================== TOMBOL + ANIMASI =================== */
+    form button,
+    #download {
+      background-color: #ffffff;
+      color: black;
+      cursor: pointer;
+      padding: 10px 20px;
+      font-size: 16px;
+      border: none;
+      border-radius: 8px;
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+      z-index: 1;
+    }
+
+    form button::before,
+    #download::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background-color: #00000020;
+      transition: all 0.3s ease;
+      z-index: -1;
+    }
+
+    form button:hover::before,
+    #download:hover::before {
+      left: 0;
+    }
+
+    form button:active,
+    #download:active {
+      transform: scale(0.95);
+    }
+
+    /* =================== TABEL =================== */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 20px;
+    }
+
+    thead {
+      background-color: rgba(255, 255, 255, 0.1);
+    }
+
+    th, td {
+      padding: 10px;
+      text-align: center;
+      border-bottom: 1px solid #555;
+      color: white;
+    }
+
+    /* =================== TOMBOL DOWNLOAD =================== */
+    #download {
+      display: block;
+      margin: auto;
+    }
+  </style>
+</head>
+<body>
+  <div class="bg-overlay"></div>
+
+  <div class="container">
+    <h1>💸 𝖬𝖠𝖭𝖠𝖩𝖤𝖬𝖤𝖭 𝖴𝖠𝖭𝖦 𝖡𝖸 𝖸𝖴𝖱𝖮💸</h1>
+    <form id="form">
+      <input type="date" id="tanggal" required />
+      <input type="text" id="deskripsi" placeholder="Deskripsi" required />
+      <input type="number" id="uangMasuk" placeholder="Uang Masuk" />
+      <input type="number" id="uangKeluar" placeholder="Uang Keluar" />
+      <button type="submit">Tambah</button>
+    </form>
+
+    <table id="tabel">
+      <thead>
+        <tr>
+          <th>Tanggal</th>
+          <th>Deskripsi</th>
+          <th>Uang Masuk</th>
+          <th>Uang Keluar</th>
+          <th>Saldo Akhir</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+
+    <button id="download">Simpan sebagai CSV</button>
+  </div>
+
+  <script>
+    let saldo = 0;
+    let dataTransaksi = [];
+
+    const form = document.getElementById("form");
+    const tbody = document.querySelector("#tabel tbody");
+    const downloadBtn = document.getElementById("download");
+
+    form.addEventListener("submit", function (e) {
+      e.preventDefault();
+
+      const tanggal = document.getElementById("tanggal").value;
+      const deskripsi = document.getElementById("deskripsi").value;
+      const uangMasuk = parseFloat(document.getElementById("uangMasuk").value) || 0;
+      const uangKeluar = parseFloat(document.getElementById("uangKeluar").value) || 0;
+
+      saldo += uangMasuk - uangKeluar;
+
+      const row = document.createElement("tr");
+      row.innerHTML = `
+        <td>${tanggal}</td>
+        <td>${deskripsi}</td>
+        <td>${uangMasuk.toLocaleString()}</td>
+        <td>${uangKeluar.toLocaleString()}</td>
+        <td>${saldo.toLocaleString()}</td>
+      `;
+
+      tbody.appendChild(row);
+
+      dataTransaksi.push({
+        tanggal,
+        deskripsi,
+        uangMasuk,
+        uangKeluar,
+        saldo,
+      });
+
+      localStorage.setItem("transaksi", JSON.stringify(dataTransaksi));
+      form.reset();
+    });
+
+    downloadBtn.addEventListener("click", function () {
+      let csvContent = "data:text/csv;charset=utf-8,";
+      csvContent += "Tanggal,Deskripsi,Uang Masuk,Uang Keluar,Saldo Akhir\n";
+      dataTransaksi.forEach(item => {
+        csvContent += `${item.tanggal},${item.deskripsi},${item.uangMasuk},${item.uangKeluar},${item.saldo}\n`;
+      });
+
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      link.setAttribute("download", "manajemen_uang.csv");
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    });
+
+    window.addEventListener("DOMContentLoaded", () => {
+      const dataSimpan = JSON.parse(localStorage.getItem("transaksi")) || [];
+      dataTransaksi = dataSimpan;
+      saldo = 0;
+
+      dataTransaksi.forEach(item => {
+        saldo = item.saldo;
+
+        const row = document.createElement("tr");
+        row.innerHTML = `
+          <td>${item.tanggal}</td>
+          <td>${item.deskripsi}</td>
+          <td>${item.uangMasuk.toLocaleString()}</td>
+          <td>${item.uangKeluar.toLocaleString()}</td>
+          <td>${item.saldo.toLocaleString()}</td>
+        `;
+        tbody.appendChild(row);
+      });
+    });
+  </script>
+</body>
+</html>
