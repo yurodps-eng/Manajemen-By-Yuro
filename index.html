@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <title>💰Catatan Keuangan by Yuro💰</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: url("img/rusa.jpg") no-repeat center center fixed;
+      background-size: cover;
+      color: white;
+    }
+
+    .container {
+      background: rgba(0, 0, 0, 0.75);
+      margin: 3rem auto;
+      padding: 2rem;
+      max-width: 900px;
+      border-radius: 15px;
+      box-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 2rem;
+      font-size: 2rem;
+    }
+
+    form {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+
+    input, button {
+      padding: 0.6rem;
+      border-radius: 8px;
+      border: none;
+      font-size: 1rem;
+    }
+
+    input {
+      background: rgba(255, 255, 255, 0.1);
+      color: white;
+    }
+
+    button {
+      background-color: #00cec9;
+      color: white;
+      cursor: pointer;
+      font-weight: bold;
+      transition: all 0.2s ease;
+    }
+
+    button:hover {
+      background-color: #0984e3;
+      transform: scale(1.02);
+    }
+
+    .btn-hapus-semua {
+      background-color: #d63031;
+      width: 100%;
+    }
+
+    .btn-hapus-semua:hover {
+      background-color: #b71c1c;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 2rem;
+    }
+
+    th, td {
+      padding: 0.8rem;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      text-align: center;
+      background-color: rgba(255, 255, 255, 0.05);
+    }
+
+    th {
+      background-color: rgba(0, 0, 0, 0.5);
+    }
+
+    td button {
+      background-color: #636e72;
+      font-size: 0.9rem;
+      margin: 2px;
+    }
+
+    td button:hover {
+      background-color: #2d3436;
+    }
+
+    .popup-buttons {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin-top: 20px;
+      flex-wrap: wrap;
+    }
+
+    canvas {
+      display: none; /* hidden by default, shown with JS */
+      margin-top: 30px;
+      background-color: white;
+      border-radius: 8px;
+      padding: 10px;
+      width: 100%;
+      max-height: 400px;
+    }
+
+    @media (max-width: 600px) {
+      form { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>💰Catatan Keuangan by Yuro💰</h1>
+    <form id="form">
+      <input type="date" id="tanggal" required />
+      <input type="text" id="deskripsi" placeholder="Deskripsi" required />
+      <input type="number" id="masuk" placeholder="Uang Masuk" />
+      <input type="number" id="keluar" placeholder="Uang Keluar" />
+      <button type="submit">Simpan</button>
+      <button type="button" onclick="resetForm()">Reset</button>
+    </form>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Tanggal</th>
+          <th>Deskripsi</th>
+          <th>Masuk</th>
+          <th>Keluar</th>
+          <th>Saldo</th>
+          <th>Aksi</th>
+        </tr>
+      </thead>
+      <tbody id="tabel-transaksi"></tbody>
+    </table>
+
+    <div class="popup-buttons">
+      <button class="btn-hapus-semua" onclick="hapusSemua()">🗑️ Hapus Semua</button>
+      <button onclick="downloadExcel()">📁 Unduh Excel</button>
+    </div>
+
+    <canvas id="financeChart"></canvas>
+  </div>
+
+  <script>
+    let saldo = 0;
+    let transaksi = JSON.parse(localStorage.getItem("transaksi")) || [];
+    let editIndex = -1;
+    const form = document.getElementById("form");
+    const tabel = document.getElementById("tabel-transaksi");
+    const tanggalInput = document.getElementById("tanggal");
+    const deskripsiInput = document.getElementById("deskripsi");
+    const masukInput = document.getElementById("masuk");
+    const keluarInput = document.getElementById("keluar");
+    const canvas = document.getElementById("financeChart");
+
+    if (transaksi.length > 0) render();
+
+    form.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const tanggal = tanggalInput.value;
+      const deskripsi = deskripsiInput.value;
+      const masuk = parseFloat(masukInput.value) || 0;
+      const keluar = parseFloat(keluarInput.value) || 0;
+
+      if (editIndex > -1) transaksi.splice(editIndex, 1);
+
+      transaksi.push({ tanggal, deskripsi, masuk, keluar });
+      localStorage.setItem("transaksi", JSON.stringify(transaksi));
+      render();
+      resetForm();
+    });
+
+    function render() {
+      tabel.innerHTML = "";
+      saldo = 0;
+      transaksi.forEach((item, index) => {
+        saldo += item.masuk - item.keluar;
+        item.saldo = saldo;
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${formatTanggal(item.tanggal)}</td>
+          <td>${item.deskripsi}</td>
+          <td>${item.masuk}</td>
+          <td>${item.keluar}</td>
+          <td>${item.saldo}</td>
+          <td>
+            <button onclick="edit(${index})">Edit</button>
+            <button onclick="hapus(${index})" style="background-color:#e17055;">Hapus</button>
+          </td>`;
+        tabel.appendChild(tr);
+      });
+
+      updateChart(transaksi);
+    }
+
+    function formatTanggal(tgl) {
+      const date = new Date(tgl);
+      return date.toLocaleDateString("id-ID");
+    }
+
+    function edit(index) {
+      const t = transaksi[index];
+      tanggalInput.value = t.tanggal;
+      deskripsiInput.value = t.deskripsi;
+      masukInput.value = t.masuk;
+      keluarInput.value = t.keluar;
+      editIndex = index;
+    }
+
+    function hapus(index) {
+      if (confirm("Hapus data ini?")) {
+        transaksi.splice(index, 1);
+        localStorage.setItem("transaksi", JSON.stringify(transaksi));
+        render();
+      }
+    }
+
+    function hapusSemua() {
+      if (confirm("Yakin ingin menghapus semua history?")) {
+        transaksi = [];
+        localStorage.removeItem("transaksi");
+        render();
+        canvas.style.display = "none";
+      }
+    }
+
+    function resetForm() {
+      deskripsiInput.value = "";
+      masukInput.value = "";
+      keluarInput.value = "";
+      tanggalInput.value = new Date().toISOString().slice(0, 10);
+      editIndex = -1;
+    }
+
+    function updateChart(data) {
+      const ctx = canvas.getContext('2d');
+      const labels = data.map(item => formatTanggal(item.tanggal));
+      const pemasukan = data.map(item => item.masuk);
+      const pengeluaran = data.map(item => item.keluar);
+
+      if (window.financeChart) window.financeChart.destroy();
+
+      if (data.length === 0) {
+        canvas.style.display = "none";
+        return;
+      }
+
+      canvas.style.display = "block";
+      window.financeChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [
+            { label: 'Pemasukan', data: pemasukan, backgroundColor: '#4CAF50' },
+            { label: 'Pengeluaran', data: pengeluaran, backgroundColor: '#F44336' }
+          ]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: { position: 'top' },
+            title: { display: true, text: 'Grafik Keuangan Harian' }
+          }
+        }
+      });
+    }
+
+    function downloadExcel() {
+      const data = transaksi.map(item => ({
+        Tanggal: formatTanggal(item.tanggal),
+        Deskripsi: item.deskripsi,
+        Masuk: item.masuk,
+        Keluar: item.keluar,
+        'Saldo Akhir': item.saldo
+      }));
+      const ws = XLSX.utils.json_to_sheet(data);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Laporan");
+      XLSX.writeFile(wb, "Laporan_Keuangan.xlsx");
+    }
+  </script>
+</body>
+</html>
